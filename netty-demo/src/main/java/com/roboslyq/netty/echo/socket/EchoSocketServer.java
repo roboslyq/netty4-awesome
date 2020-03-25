@@ -1,6 +1,6 @@
 /**
  * Copyright (C), 2015-2020
- * FileName: EchoServer
+ * FileName: EchoHttpServer
  * Author:   luo.yongqian
  * Date:     2020/3/24 22:56
  * Description:
@@ -23,7 +23,7 @@ import io.netty.handler.logging.LoggingHandler;
  * @date 2020/3/24
  * @since 1.0.0
  */
-public class EchoServer {
+public class EchoSocketServer {
     public static void main(String[] args) throws InterruptedException {
         //事件循环组(死循环)
         //boss线程池，处理连接事务。将具体的处理工作交给workGroup
@@ -44,7 +44,7 @@ public class EchoServer {
                     //设置workGroup相关Handler
                     .childHandler(
                             // Handler初始化器
-                            new EchoServerhandlerInitializer()
+                            new EchoSocketServerhandlerInitializer()
                     );
             //绑定一个端口并且同步，生成一个ChannelFuture对象
             ChannelFuture f=  bootstrap.bind(8081).sync();

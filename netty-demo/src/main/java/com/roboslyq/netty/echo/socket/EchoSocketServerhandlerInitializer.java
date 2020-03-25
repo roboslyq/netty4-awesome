@@ -1,6 +1,6 @@
 /**
  * Copyright (C), 2015-2020
- * FileName: EchoServerhandlerInitializer
+ * FileName: EchoHttpServerHandlerInitializer
  * Author:   luo.yongqian
  * Date:     2020/3/25 0:27
  * Description:
@@ -25,7 +25,7 @@ import io.netty.util.CharsetUtil;
  * @date 2020/3/25
  * @since 1.0.0
  */
-public class EchoServerhandlerInitializer extends ChannelInitializer<SocketChannel> {
+public class EchoSocketServerhandlerInitializer extends ChannelInitializer<SocketChannel> {
 
 
     @Override
@@ -38,6 +38,6 @@ public class EchoServerhandlerInitializer extends ChannelInitializer<SocketChann
                 //添加字符器解码器
                 .addLast(new StringDecoder(CharsetUtil.UTF_8))
                 .addLast(new StringEncoder(CharsetUtil.UTF_8))
-                .addLast(new EchoServerHandler());
+                .addLast(new EchoSocketServerHandler());
     }
 }

@@ -1,6 +1,6 @@
 /**
  * Copyright (C), 2015-2020
- * FileName: EchoServerHandler
+ * FileName: EchoHttpServerHandler
  * Author:   luo.yongqian
  * Date:     2020/3/25 0:25
  * Description:
@@ -22,7 +22,7 @@ import java.util.UUID;
  * @date 2020/3/25
  * @since 1.0.0
  */
-public class EchoServerHandler extends SimpleChannelInboundHandler<String> {
+public class EchoSocketServerHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {

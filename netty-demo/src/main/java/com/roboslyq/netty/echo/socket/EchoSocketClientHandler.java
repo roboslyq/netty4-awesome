@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
 
-public class EchoClientHandler extends SimpleChannelInboundHandler<String> {
+public class EchoSocketClientHandler extends SimpleChannelInboundHandler<String> {
 
     /**
      *

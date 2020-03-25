@@ -32,7 +32,7 @@ import io.netty.util.CharsetUtil;
 /**
  *
  */
-public final class EchoClient {
+public final class EchoSocketClient {
 
     static final String HOST = System.getProperty("host", "127.0.0.1");
     static final int PORT = Integer.parseInt(System.getProperty("port", "8081"));
@@ -61,7 +61,7 @@ public final class EchoClient {
                             p.addLast(new StringDecoder(CharsetUtil.UTF_8));
                             p.addLast(new StringEncoder(CharsetUtil.UTF_8));
                             //自定义处理
-                            p.addLast(new EchoClientHandler());
+                            p.addLast(new EchoSocketClientHandler());
                         }
                     });
 

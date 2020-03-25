@@ -13,13 +13,14 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package com.roboslyq.netty.echo;
+package com.roboslyq.netty.echo.socket;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
 
 
 public class EchoClientHandler extends SimpleChannelInboundHandler<String> {
@@ -32,21 +33,22 @@ public class EchoClientHandler extends SimpleChannelInboundHandler<String> {
      */
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-        System.out.println(ctx.channel().remoteAddress());
-        System.out.println("client 输出:"+msg);
+        System.out.println("收到服务端" + ctx.channel().remoteAddress()+ "消息: "+msg);
+        TimeUnit.SECONDS.sleep(1);
         ctx.writeAndFlush("来自 client："+ LocalDateTime.now());
     }
 
 
     /**
-     * 如果没有这个方法，Client并不会主动发消息给Server
-     * 那么Server的channelRead0无法触发，导致Client的channelRead0也无法触发
-     * 这个channelActive可以让Client连接后，发送一条消息
+     * 0、此方法只会被激活一次
+     * 1、如果没有这个方法，Client并不会主动发消息给Server，那么Server的channelRead0无法触发，导致Client的channelRead0也无法触发
+     * 2、这个channelActive可以让Client连接后，发送一条消息给服务器端，才能触发上面的channelRead0()方法
      * @param ctx
      * @throws Exception
      */
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        TimeUnit.SECONDS.sleep(1);
         ctx.writeAndFlush("来自客户端的问候");
     }
 

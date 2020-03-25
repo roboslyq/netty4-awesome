@@ -29,6 +29,7 @@ public class MyServer {
             channelFuture.channel().closeFuture().sync();
 
         }finally {
+            //循环组优雅关闭
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
         }

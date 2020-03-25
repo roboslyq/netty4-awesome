@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package com.roboslyq.netty.echo;
+package com.roboslyq.netty.echo.socket;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -23,6 +23,11 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
+import io.netty.util.CharsetUtil;
 
 /**
  *
@@ -45,20 +50,31 @@ public final class EchoClient {
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel ch) throws Exception {
+                            /*
+                             * 关于Pipeline配置，客户端与服务端必须保持一个对应关系，才能正常的实现编码解码操作。
+                             */
                             ChannelPipeline p = ch.pipeline();
-
-                            //p.addLast(new LoggingHandler(LogLevel.INFO));
+                            //定长编码器
+                            p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE,0,4,0,4));
+                            p.addLast(new LengthFieldPrepender(4));
+                            //字符串编码器
+                            p.addLast(new StringDecoder(CharsetUtil.UTF_8));
+                            p.addLast(new StringEncoder(CharsetUtil.UTF_8));
+                            //自定义处理
                             p.addLast(new EchoClientHandler());
                         }
                     });
 
             // Start the client.
+            // 启动客户端
             ChannelFuture f = b.connect(HOST, PORT).sync();
 
             // Wait until the connection is closed.
+            // 监听客户端直到连接关闭
             f.channel().closeFuture().sync();
         } finally {
             // Shut down the event loop to terminate all threads.
+            // 优雅的关闭线程池
             group.shutdownGracefully();
         }
     }

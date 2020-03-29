@@ -65,7 +65,7 @@ public final class EchoSocketClient {
                         }
                     });
 
-            // Start the client.
+            // Start the clientStart.
             // 启动客户端
             ChannelFuture f = b.connect(HOST, PORT).sync();
 

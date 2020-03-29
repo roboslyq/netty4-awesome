@@ -52,18 +52,18 @@ public final class EchoHttpClient {
                              * 关于Pipeline配置，客户端与服务端必须保持一个对应关系，才能正常的实现编码解码操作。
                              */
                             ChannelPipeline p = ch.pipeline();
-                            //定长编码器
+                            //Http客户端编码/解码器
                             p.addLast(new HttpClientCodec());
-                            //聚合
+                            //Http请求聚合器
                             p.addLast(new HttpObjectAggregator(1024 * 10 * 1024));
-                            //解压
+                            //Http解压器
                             p.addLast(new HttpContentDecompressor());
-                            //自定义处理
+                            //自定义业务处理器(类似于springmvc中的DispatcherServlet)
                             p.addLast(new EchoHttpClientHandler());
                         }
                     });
 
-            // Start the client.
+            // Start the clientStart.
             // 启动客户端
             ChannelFuture f = b.connect(HOST, PORT).sync();
 

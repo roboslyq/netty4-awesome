@@ -35,7 +35,7 @@ public class EchoSocketClientHandler extends SimpleChannelInboundHandler<String>
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
         System.out.println("收到服务端" + ctx.channel().remoteAddress()+ "消息: "+msg);
         TimeUnit.SECONDS.sleep(1);
-        ctx.writeAndFlush("来自 client："+ LocalDateTime.now());
+        ctx.writeAndFlush("来自 clientStart："+ LocalDateTime.now());
     }
 
 

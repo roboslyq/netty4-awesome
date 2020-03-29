@@ -18,16 +18,25 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 〈Channel相当于Connection抽象，因此是由此类完成端口绑定等相关操作〉
+ * 〈Channel相当于Connection抽象，因此是由此类完成端口绑定等相关操作
+ *
+ * 〉
  *
  * @author roboslyq
  * @date 2020/3/28
  * @since 1.0.0
  */
 public class ServerSocketChannelDemo {
+
+    //存储SelectionKey的队列
+    public static ConcurrentHashMap<SelectionKey,String> writeQueue = new ConcurrentHashMap();
+    static Selector  selector = null;
+    static ServerSocketChannel ssc =null;
+    private ServerChannelHandler handler = new ServerChannelHandler();
 
     public static void main(String[] args) {
         ServerSocketChannelDemo ssc = new ServerSocketChannelDemo();
@@ -37,17 +46,23 @@ public class ServerSocketChannelDemo {
             e.printStackTrace();
         }
     }
-
+    //添加SelectionKey到队列
+    public static void addWriteQueue(SelectionKey key){
+        synchronized (writeQueue) {
+            writeQueue.put(key,"");
+            //唤醒主线程
+            selector.wakeup();
+        }
+    }
     /**
      * 启动服务
      * @throws Exception
      */
     public void startServer() throws Exception {
         //
-        ServerChannelHandler handler = new ServerChannelHandler();
 
         //1、创建Channel实例
-        ServerSocketChannel ssc = ServerSocketChannel.open();
+        ssc = ServerSocketChannel.open();
 
 
         //2、绑定IP和PORT
@@ -59,60 +74,76 @@ public class ServerSocketChannelDemo {
         ssc.configureBlocking(false);
 
         //3、创建Selector
-        Selector selector = Selector.open();
+        selector = Selector.open();
 
-        //4、把ServerSocketChannel注册到selector中,并设置监听事件《监听客户端发起的连接》
+        /*
+         * 4.注册事件类型
+         *      sel:通道选择器
+         *      ops:事件类型 ==>SelectionKey:包装类，包含事件类型和通道本身。四个常量类型表示四种事件类型
+         *      SelectionKey.OP_ACCEPT 获取报文      SelectionKey.OP_CONNECT 连接
+         *      SelectionKey.OP_READ 读           SelectionKey.OP_WRITE 写
+         */
         ssc.register(selector, SelectionKey.OP_ACCEPT);
 
-        //5、循环监听事件
+        System.out.println("server started on " + Constants.PORT);
+
+        int count = 0;
+        //5、循环监听事件（多线程环境可持续读问题，很容易引起CPU空转(100%)）
         for (;;) {
             // 检查是否已经有KEY准备好I/O 相关操作。
             if(selector.select(Constants.TIME_OUT) == 0){
                 continue;
-            }else {
-                System.out.println("收到连接事件，开始处理：");
             }
-
             //6、获取对应的keys    (此处不阻塞!!!)
-            Set<SelectionKey> keys = selector.selectedKeys();
+           Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
 
             //7、遍列事件key
-            keys.forEach(key -> {
+            while (keyIterator.hasNext()){
+                SelectionKey key = keyIterator.next();
                 //8、各种事件处理
-
-                //将当前key从keys中删除
-                keys.remove(key);
-
-                //处理连接事件，可以使用一个新线程
-                if (key.isAcceptable()) {
-                    try {
-                        handler.handleAccept(key);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                //处理可读事件，可以使用一个新线程
-                if (key.isReadable()) {
-                    try {
-                        handler.handleRead(key);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                //可以写事件，可以使用一个新线程
-                if (key.isWritable() && key.isValid()) {
-                    try {
-                        handler.handleWrite(key);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                //是否可以连接
-                if (key.isConnectable()) {
-                    System.out.println("isConnectable = true");
-                }
-            });
+                keyIterator.remove();
+                System.out.println("------------->" + count++);
+                // 处理具体的Key事件
+                doSelectionkeyHandle(key);
+            };
         }
 
+    }
+
+    private void doSelectionkeyHandle( SelectionKey key) {
+        //处理连接事件，可以使用一个新线程
+        if (key.isAcceptable()) {
+            try {
+                handler.handleAccept(key);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        //处理可读事件，可以使用一个新线程
+        if (key.isReadable()) {
+            try {
+                if(writeQueue.containsKey(key)){
+                    System.out.println("已经包含Key,不需要重复处理------------->");
+                    return;
+                }else{
+                    addWriteQueue(key);
+                    handler.handleRead(key);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        //可以写事件，可以使用一个新线程
+        if (key.isWritable() && key.isValid()) {
+            try {
+                handler.handleWrite(key);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        //是否可以连接
+        if (key.isConnectable()) {
+            System.out.println("isConnectable = true");
+        }
     }
 }

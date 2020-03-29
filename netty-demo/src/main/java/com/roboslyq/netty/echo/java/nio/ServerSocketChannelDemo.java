@@ -15,11 +15,9 @@ import com.roboslyq.netty.Constants;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.Set;
 
 /**
@@ -45,6 +43,8 @@ public class ServerSocketChannelDemo {
      * @throws Exception
      */
     public void startServer() throws Exception {
+        //
+        ServerChannelHandler handler = new ServerChannelHandler();
 
         //1、创建Channel实例
         ServerSocketChannel ssc = ServerSocketChannel.open();
@@ -61,7 +61,7 @@ public class ServerSocketChannelDemo {
         //3、创建Selector
         Selector selector = Selector.open();
 
-        //4、把Channel注册到selector中,并设置监听事件
+        //4、把ServerSocketChannel注册到selector中,并设置监听事件《监听客户端发起的连接》
         ssc.register(selector, SelectionKey.OP_ACCEPT);
 
         //5、循环监听事件
@@ -80,10 +80,13 @@ public class ServerSocketChannelDemo {
             keys.forEach(key -> {
                 //8、各种事件处理
 
+                //将当前key从keys中删除
+                keys.remove(key);
+
                 //处理连接事件，可以使用一个新线程
                 if (key.isAcceptable()) {
                     try {
-                        handleAccept(key);
+                        handler.handleAccept(key);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -91,7 +94,7 @@ public class ServerSocketChannelDemo {
                 //处理可读事件，可以使用一个新线程
                 if (key.isReadable()) {
                     try {
-                        handleRead(key);
+                        handler.handleRead(key);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -99,7 +102,7 @@ public class ServerSocketChannelDemo {
                 //可以写事件，可以使用一个新线程
                 if (key.isWritable() && key.isValid()) {
                     try {
-                        handleWrite(key);
+                        handler.handleWrite(key);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -108,64 +111,8 @@ public class ServerSocketChannelDemo {
                 if (key.isConnectable()) {
                     System.out.println("isConnectable = true");
                 }
-                //将当前key从keys中删除
-                keys.remove(key);
             });
         }
 
-    }
-
-    /**
-     * 处理客户端连接事件
-     *
-     * @param key
-     */
-    private void handleAccept(SelectionKey key) throws IOException {
-        ServerSocketChannel ssc = (ServerSocketChannel) key.channel();
-        SocketChannel sc = ssc.accept();
-        sc.configureBlocking(false);
-        //当连接建立起来之后，就需要重新在Selector上注册新的事件监听(READ事件): 必须指定Buffer,否则read时可能为报NullPointerException
-        sc.register(key.selector(),SelectionKey.OP_READ,ByteBuffer.allocateDirect(Constants.BUF_SIZE));
-//        sc.register(key.selector(), SelectionKey.OP_READ);
-    }
-
-    private void handleWrite(SelectionKey key) throws IOException {
-        ServerSocketChannel ssc = (ServerSocketChannel) key.channel();
-        SocketChannel sc = ssc.accept();
-
-        // 将要发送的内容
-        ByteBuffer buffer = ByteBuffer.allocate(Constants.BUF_SIZE);
-        String info = "服务器响应：已经收到你的请求";
-        buffer.clear();
-        buffer.put(info.getBytes());
-        buffer.flip();
-        while(buffer.hasRemaining()){
-            sc.write(buffer);
-        }
-        buffer.compact();
-    }
-
-    /**
-     * 可读事件处理
-     *
-     * @param key
-     */
-    private void handleRead(SelectionKey key) throws IOException {
-        //注意：这里的Channel类型不在是ServerSocketChannel，而是SocketChannel
-        SocketChannel channel = (SocketChannel) key.channel();
-        ByteBuffer buf = (ByteBuffer) key.attachment();
-        int bytesRead = channel.read(buf);
-        while (bytesRead > 0) {
-            buf.flip();
-            while (buf.hasRemaining()) {
-                System.out.print((char) buf.get());
-            }
-            System.out.println();
-            buf.clear();
-            bytesRead = channel.read(buf);
-        }
-        if (bytesRead == -1) {
-            channel.close();
-        }
     }
 }

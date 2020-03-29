@@ -31,4 +31,6 @@ public interface Constants {
 
     public static int TIME_OUT = 3000;
 
+    public static String UTF8 = "UTF-8";
+
 }

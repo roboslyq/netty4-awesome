@@ -12,18 +12,17 @@ package com.roboslyq.netty.echo.java.nio;
 
 import com.roboslyq.netty.Constants;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
-import java.util.*;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 〈Channel相当于Connection抽象，因此是由此类完成端口绑定等相关操作
- *
+ * <p>
  * 〉
  *
  * @author roboslyq
@@ -32,10 +31,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ServerSocketChannelDemo {
 
-    //存储SelectionKey的队列
-    public static ConcurrentHashMap<SelectionKey,String> writeQueue = new ConcurrentHashMap();
-    static Selector  selector = null;
-    static ServerSocketChannel ssc =null;
+
+    static Selector selector = null;
+    static ServerSocketChannel ssc = null;
     private ServerChannelHandler handler = new ServerChannelHandler();
 
     public static void main(String[] args) {
@@ -46,16 +44,10 @@ public class ServerSocketChannelDemo {
             e.printStackTrace();
         }
     }
-    //添加SelectionKey到队列
-    public static void addWriteQueue(SelectionKey key){
-        synchronized (writeQueue) {
-            writeQueue.put(key,"");
-            //唤醒主线程
-            selector.wakeup();
-        }
-    }
+
     /**
      * 启动服务
+     *
      * @throws Exception
      */
     public void startServer() throws Exception {
@@ -67,7 +59,7 @@ public class ServerSocketChannelDemo {
 
         //2、绑定IP和PORT
         InetAddress inetAddress = InetAddress.getByName(Constants.HOST);
-        InetSocketAddress inetSocketAddress = new InetSocketAddress(inetAddress,Constants.PORT);
+        InetSocketAddress inetSocketAddress = new InetSocketAddress(inetAddress, Constants.PORT);
         ssc.socket().bind(inetSocketAddress);
 
         //必须异步，否则启动报错
@@ -89,29 +81,30 @@ public class ServerSocketChannelDemo {
 
         int count = 0;
         //5、循环监听事件（多线程环境可持续读问题，很容易引起CPU空转(100%)）
-        for (;;) {
+        for (; ; ) {
             // 检查是否已经有KEY准备好I/O 相关操作。
-            if(selector.select(Constants.TIME_OUT) == 0){
+            if (selector.select(Constants.TIME_OUT) == 0) {
                 continue;
             }
             //6、获取对应的keys    (此处不阻塞!!!)
-           Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
+            Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
 
             //7、遍列事件key
-            while (keyIterator.hasNext()){
+            while (keyIterator.hasNext()) {
                 SelectionKey key = keyIterator.next();
                 //8、各种事件处理
                 keyIterator.remove();
                 System.out.println("------------->" + count++);
                 // 处理具体的Key事件
                 doSelectionkeyHandle(key);
-            };
+            }
+            ;
         }
 
     }
 
-    private void doSelectionkeyHandle( SelectionKey key) {
-        //处理连接事件，可以使用一个新线程
+    private void doSelectionkeyHandle(SelectionKey key) {
+        //处理连接事件，可以使用一个新线程《正常情况使用非常多》
         if (key.isAcceptable()) {
             try {
                 handler.handleAccept(key);
@@ -119,21 +112,21 @@ public class ServerSocketChannelDemo {
                 e.printStackTrace();
             }
         }
-        //处理可读事件，可以使用一个新线程
+        //处理可读事件，可以使用一个新线程《正常情况 ，服务用得较少》
         if (key.isReadable()) {
             try {
-                if(writeQueue.containsKey(key)){
+                if (ServerChannelHandler.writeQueue.containsKey(key)) {
                     System.out.println("已经包含Key,不需要重复处理------------->");
                     return;
-                }else{
-                    addWriteQueue(key);
+                } else {
+                    ServerChannelHandler.addWriteQueue(key);
                     handler.handleRead(key);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-        //可以写事件，可以使用一个新线程
+        //可以写事件，可以使用一个新线程《一般不会用以此事件》
         if (key.isWritable() && key.isValid()) {
             try {
                 handler.handleWrite(key);
@@ -141,7 +134,7 @@ public class ServerSocketChannelDemo {
                 e.printStackTrace();
             }
         }
-        //是否可以连接
+        //是否可以连接《一般不会用以此事件》
         if (key.isConnectable()) {
             System.out.println("isConnectable = true");
         }

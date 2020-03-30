@@ -20,6 +20,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -31,7 +32,9 @@ import java.util.concurrent.Executors;
  * @since 1.0.0
  */
 public class ServerChannelHandler {
+    // 存储SelectionKey的队列
 
+    public static ConcurrentHashMap<SelectionKey, String> writeQueue = new ConcurrentHashMap();
 
     Executor executor = Executors.newFixedThreadPool(10);
 
@@ -70,8 +73,10 @@ public class ServerChannelHandler {
      * @param key
      */
     public void handleRead(SelectionKey key) throws IOException {
+
         //取消读事件的监控《注册表中的信息会删除，无法再次添加》
-//        key.cancel();
+        //        key.cancel();
+
         executor.execute(() -> {
             try {
                 //注意：这里的Channel类型不在是ServerSocketChannel，而是SocketChannel
@@ -79,13 +84,14 @@ public class ServerChannelHandler {
 
                 ByteBuffer buf = (ByteBuffer) key.attachment();
                 int bytesRead = sc.read(buf);
+                StringBuilder sb = new StringBuilder();
                 while (bytesRead > 0) {
                     buf.flip();
                     while (buf.hasRemaining()) {
-                        System.out.print((char) buf.get());
+                        sb.append(buf.get());
                     }
                     //换行
-                    System.out.println();
+                    System.out.println(sb.toString());
                     buf.clear();
                     bytesRead = sc.read(buf);
                 }
@@ -93,9 +99,10 @@ public class ServerChannelHandler {
                 //将感兴趣事件修改为 可读
                 key.interestOps(SelectionKey.OP_READ);
                 sc.register(key.selector(),SelectionKey.OP_READ,ByteBuffer.allocateDirect(Constants.BUF_SIZE));
-                ServerSocketChannelDemo.writeQueue.remove(key);
             } catch (Exception e) {
                 e.printStackTrace();
+            }finally {
+                delWriteQueue(key);
             }
         });
 
@@ -129,7 +136,24 @@ public class ServerChannelHandler {
                 sc.register(key.selector(), SelectionKey.OP_READ, ByteBuffer.allocateDirect(Constants.BUF_SIZE));
             } catch (Exception e) {
                 e.printStackTrace();
+            }finally {
+                delWriteQueue(key);
             }
         });
+    }
+
+
+    // 添加SelectionKey到队列
+
+    public static void addWriteQueue(SelectionKey key) {
+        synchronized (writeQueue) {
+            writeQueue.put(key, "");
+            //唤醒主线程
+//            selector.wakeup();
+        }
+    }
+
+    public static void delWriteQueue(SelectionKey key) {
+        writeQueue.remove(key);
     }
 }

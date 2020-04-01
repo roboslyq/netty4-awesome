@@ -8,10 +8,9 @@
  * <author>                 <time>          <version>          <desc>
  * luo.yongqian         2020/4/1 22:31      1.0.0               创建
  */
-package com.roboslyq.netty.sticky;
+package com.roboslyq.netty.sticky.normal;
 
 import com.roboslyq.netty.Constants;
-import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -104,7 +103,7 @@ import java.net.InetSocketAddress;
  * @date 2020/4/1
  * @since 1.0.0
  */
-public class StickyServer {
+public class DealwithStickyServer {
     public static void main(String[] args) {
         NioEventLoopGroup bossGroup= new NioEventLoopGroup();
         NioEventLoopGroup workGroup = new NioEventLoopGroup();
@@ -114,7 +113,7 @@ public class StickyServer {
             bootstrap.group(bossGroup,workGroup)
                     .option(ChannelOption.SO_BACKLOG,1024)
                     .channel(NioServerSocketChannel.class)
-                    .childHandler(new StickyServerHandlerInitializer());
+                    .childHandler(new DealwithStickyServerHandlerInitializer());
             InetSocketAddress inetSocketAddress = new InetSocketAddress(Constants.HOST, Constants.PORT);
             ChannelFuture future =bootstrap.bind(inetSocketAddress).sync();
             future.channel().closeFuture().sync();

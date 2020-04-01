@@ -8,12 +8,11 @@
  * <author>                 <time>          <version>          <desc>
  * luo.yongqian         2020/3/25 0:27      1.0.0               创建
  */
-package com.roboslyq.netty.echo.socket;
+package com.roboslyq.netty.sticky.normal;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
@@ -25,20 +24,17 @@ import io.netty.util.CharsetUtil;
  * @date 2020/3/25
  * @since 1.0.0
  */
-public class EchoSocketServerhandlerInitializer extends ChannelInitializer<SocketChannel> {
+public class DealwithStickyServerHandlerInitializer extends ChannelInitializer<SocketChannel> {
 
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
         //每次都是通过new创建各组件实现，保证不同channel的具体handler实现不同
         ch.pipeline()
-                //添加定长解码器
-                .addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4))
-                .addLast(new LengthFieldPrepender(4))
-                //添加字符器解码器
+                // 解码器，解决粘包和拆包问题
+                .addLast(new LineBasedFrameDecoder(1024))
                 .addLast(new StringDecoder(CharsetUtil.UTF_8))
                 .addLast(new StringEncoder(CharsetUtil.UTF_8))
-                .addLast(new EchoSocketServerHandler());
+                .addLast(new DealwithStickyServerChannelHandler());
     }
-
 }

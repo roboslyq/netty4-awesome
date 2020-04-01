@@ -1,6 +1,6 @@
 /**
  * Copyright (C), 2015-2020
- * FileName: StickyServerChannelHandler
+ * FileName: DealwithStickyServerChannelHandler
  * Author:   luo.yongqian
  * Date:     2020/4/1 22:40
  * Description:
